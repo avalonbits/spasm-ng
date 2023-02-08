@@ -96,7 +96,7 @@ enum calc_type {
 int findfield ( unsigned char byte, const unsigned char* buffer );
 int findfield_flex( unsigned char prefix_byte, const unsigned char* buffer, int *buf_field_loc, int *buf_field_size );
 int siggen (const unsigned char* hashbuf, unsigned char* sigbuf, int* outf);
-void intelhex (FILE * outfile , const unsigned char* buffer, int size, unsigned int address = 0x4000);
+void intelhex (FILE * outfile , const unsigned char* buffer, int size, unsigned int address = 0x0000);
 void alphanumeric (char* namestring, bool allow_lower);
 void makerom (const unsigned char *output_contents, DWORD output_len, FILE *outfile);
 void makehex (const unsigned char *output_contents, DWORD output_len, FILE *outfile);
@@ -155,10 +155,10 @@ void write_file (const unsigned char *output_contents, int output_len, const cha
 	for (i = strlen (output_filename); output_filename[i] != '\\' && output_filename[i] != '/' && i; i--);
 	if (i != 0)
 		i++;
-	
+
 	char prgmname[MAX_PATH];
 	strcpy(prgmname, output_filename);
-	
+
 	for (i = strlen (prgmname); prgmname[i] != '.' && i; i--);
 	if (i != 0)
 		prgmname[i] = '\0';
@@ -261,7 +261,7 @@ void makeapp (const unsigned char *output_contents, DWORD size, FILE *outfile, c
 		SetLastSPASMError(SPASM_ERR_SIGNER_MISSING_PAGES);
 		return;
 	}
-	
+
 	pages = size>>14; /* this is safe because we know there's enough room for the sig */
 	if (size & 0x3FFF) pages++;
 	buffer[pnt] = pages;
@@ -280,7 +280,7 @@ void makeapp (const unsigned char *output_contents, DWORD size, FILE *outfile, c
 /* Calculate MD5 */
 #ifdef WIN32
 	unsigned char hashbuf[64];
-	HCRYPTPROV hCryptProv; 
+	HCRYPTPROV hCryptProv;
 	HCRYPTHASH hCryptHash;
 	DWORD sizebuf = ARRAYSIZE(hashbuf);
 	CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_MACHINE_KEYSET);
@@ -325,7 +325,7 @@ void makeapp (const unsigned char *output_contents, DWORD size, FILE *outfile, c
 	fputc((tempnum >> 8) & 0xFF, outfile);
 	fputc((tempnum >> 16)& 0xFF, outfile);
 	fputc( tempnum >> 24, outfile);
-	
+
 /* Convert to 8xk */
 	intelhex(outfile, buffer, total_size);
 
@@ -389,10 +389,10 @@ int findfield_flex( unsigned char prefix_byte, const unsigned char* buffer, int 
 #ifndef NO_APPSIGN
 int siggen(const unsigned char* hashbuf, unsigned char* sigbuf, int* outf) {
 	mpz_t mhash, p, q, r, s, temp, result;
-	
+
 	unsigned int lp,lq;
 	int siglength;
-	
+
 /* Intiate vars */
 	mpz_init(mhash);
 	mpz_init(p);
@@ -401,7 +401,7 @@ int siggen(const unsigned char* hashbuf, unsigned char* sigbuf, int* outf) {
 	mpz_init(s);
 	mpz_init(temp);
 	mpz_init(result);
-	
+
 /* Import vars */
 	mpz_import(mhash, 16, -1, 1, -1, 0, hashbuf);
 	mpz_import(p, sizeof(pbuf), -1, 1, -1, 0, pbuf);
@@ -410,7 +410,7 @@ int siggen(const unsigned char* hashbuf, unsigned char* sigbuf, int* outf) {
 /*      M' = m*256+1      */
 	mpz_mul_ui(mhash, mhash, 256);
 	mpz_add_ui(mhash, mhash, 1);
-	
+
 /* calc f {2, 3,  0, 1 }  */
 	lp = mpz_legendre(mhash, p) == 1 ? 0 : 1;
 	lq = mpz_legendre(mhash, q) == 1 ? 1 : 0;
@@ -427,31 +427,31 @@ int siggen(const unsigned char* hashbuf, unsigned char* sigbuf, int* outf) {
 /* r = ( M' ^ ( ( p + 1) / 4 ) ) mod p */
 	mpz_import(result, sizeof(p14buf), -1, 1, -1, 0, p14buf);
 	mpz_powm(r, mhash, result, p);
-	
+
 /* s = ( M' ^ ( ( q + 1) / 4 ) ) mod q */
 	mpz_import(result, sizeof(q14buf), -1, 1, -1, 0, q14buf);
 	mpz_powm(s, mhash, result, q);
-	
+
 /* r-s */
 	mpz_set_ui(temp, 0);
 	mpz_sub(temp, r, s);
-	
+
 /* q ^ (p - 2)) */
 	mpz_import(result, sizeof(qpowpbuf), -1, 1, -1, 0, qpowpbuf);
-	
+
 /* (r-s) * q^(p-2) mod p */
 	mpz_mul(temp, temp, result);
 	mpz_mod(temp, temp, p);
-	
+
 /* ((r-s) * q^(p-2) mod p) * q + s */
 	mpz_mul(result, temp, q);
 	mpz_add(result, result, s);
-	
+
 /* export sig */
 	siglength = mpz_sizeinbase(result, 16);
 	siglength = (siglength + 1) / 2;
 	mpz_export(sigbuf, NULL, -1, 1, -1, 0, result);
-	
+
 /* Clean Up */
 	mpz_clear(p);
 	mpz_clear(q);
@@ -468,7 +468,7 @@ void makeprgm (const unsigned char *output_contents, int size, FILE *outfile, co
 	unsigned char* pnt;
 	char *namestring, progstring[3];
 	const unsigned char trailer83[] = { 0x3f, 0xd4, 0x3f, 0x30, 0x30, 0x30, 0x30, 0x3f, 0xd4 };
-	
+
 	if (calc==TYPE_82P) {
 		char name_buf[256];
 		snprintf(name_buf, sizeof(name_buf), "\xdc%s", prgmname);
@@ -513,7 +513,7 @@ void makeprgm (const unsigned char *output_contents, int size, FILE *outfile, co
 			SetLastSPASMWarning(SPASM_WARN_SIGNER_FILE_SIZE_24KB);
 		}
 	}
-	
+
 	/* Lots of pointless header crap */
 	for (i = 0; i < 4; i++)
 		fputc (fileheader[i], outfile);
@@ -527,9 +527,9 @@ void makeprgm (const unsigned char *output_contents, int size, FILE *outfile, co
 		fputc (0x0C,outfile);
 	} else {
 		fputc (fileheader[i++],outfile);
-	}    
+	}
 	fputc (fileheader[i++],outfile);
-	
+
 	// Copy in the comment
 	for (i = 0; i < 42; i++)
 		fputc(comment[i],outfile);
@@ -567,7 +567,7 @@ void makeprgm (const unsigned char *output_contents, int size, FILE *outfile, co
 		else
 			chksum += fputc(0x15,outfile);
 	}
-	
+
 	/* The actual name is placed with padded with zeros */
 	if (calc < TYPE_85P && calc != TYPE_82P) {
 		if (!((temp=namestring[0])>='A' && temp<='Z')) show_warning ("First character in name must be a letter.");
@@ -587,7 +587,7 @@ void makeprgm (const unsigned char *output_contents, int size, FILE *outfile, co
 	size-=2;
 	chksum += fputc(size & 0xFF,outfile);
 	chksum += fputc(size>>8,outfile);
-	
+
 	/* check for BB 6D on 83+ */
 	if (calc == TYPE_8XP) {
 		unsigned short header = ((unsigned char)output_contents[0])*256 + ((unsigned char)output_contents[1]);
@@ -603,14 +603,14 @@ void makeprgm (const unsigned char *output_contents, int size, FILE *outfile, co
 		chksum += fputc (0x28, outfile);
 		size -= 2;
 	} else if (calc == TYPE_82P) {
-		chksum += 
+		chksum +=
 			fputc (0xD5, outfile);
-		chksum += 
+		chksum +=
 			fputc (0x00, outfile);
-		chksum += 
+		chksum +=
 			fputc (0x11, outfile);
 	}
-	
+
 	if (calc == TYPE_82P) size -= 3;
 	if (calc == TYPE_83P) {
 		size -= 9;
@@ -668,9 +668,9 @@ void intelhex (FILE* outfile, const unsigned char* buffer, int size, unsigned in
 	unsigned int ci, temp, i, address;
 	unsigned char chksum;
 	unsigned char outbuf[128];
-	
+
 	//We are in binary mode, we must handle carriage return ourselves.
-   
+
 	while (bpnt < size){
 		fprintf(outfile,":02000002%04X%02X\r\n",page,(unsigned char) ( (~(0x04 + page)) +1));
 		page++;
@@ -687,7 +687,7 @@ void intelhex (FILE* outfile, const unsigned char* buffer, int size, unsigned in
 			ci>>=1;
 			fprintf(outfile,":%02X%04X00%s%02X\r\n",ci,address,outbuf,(unsigned char)( ~(chksum + ci)+1));
 			address +=0x20;
-		}         
+		}
 	}
 	fprintf(outfile,":00000001FF");
 }
